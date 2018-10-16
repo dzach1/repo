@@ -1,0 +1,24 @@
+---
+- name: IOS Ping
+  hosts: "{{ usersrc }}"
+  gather_facts: false
+  connection: local
+
+  vars: 
+    cli:
+      host: "{{ ansible_host }}"
+      username: "{{ ansible_user }}"
+      password: "{{ ansible_password }}"
+  tasks:
+    - name: IOS Ping
+      ios_ping: 
+        dest: "{{ userdest }}"
+        provider: "{{ cli }}"
+      
+      register: output
+
+    - name: show output
+      debug:
+        var: output
+   
+
