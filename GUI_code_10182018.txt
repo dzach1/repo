@@ -1,0 +1,388 @@
+from tkinter import *
+from tkinter import Entry, IntVar, Tk, messagebox
+import tkinter.ttk as ttk
+from PIL import ImageTk, Image
+import socket
+import subprocess
+
+# Initialize Tk
+GUI = Tk()
+
+# Global variables
+global click
+click = ""
+mainlogo = "mainlogo.png"
+
+# Variables
+title = "Philips Port Validator"
+TCP_checked = IntVar()
+UDP_checked = IntVar()
+udp_message = "To test UDP ports this application is required to be installed\non the destination node as well."
+
+
+#                                   Functions
+def create_packet(transport):
+    # socket.AF_INET, socket.SOCK_STREAM or socket.SOCK_DGRAM"
+    if transport == "TCP":
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        return s
+    elif transport == "UDP":
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        return s
+
+
+def port_scanner(ip, port, new_socket):
+    try:
+        new_socket.settimeout(5)
+        new_socket.connect((ip, int(port)))
+        if new_socket is not None:
+            return True
+        else:
+            return False
+    except ConnectionRefusedError:
+        return False
+    except TimeoutError:
+        return False
+    except Exception:
+        return False
+
+
+def port_status(state, ip, port):
+    if state is True:
+        result = "Connection to " + ip + " with port " + port + " is opened."
+        return result
+    else:
+        result = "Connection to " + ip + " with port " + port + " is not available."
+        return result
+
+
+def port_test_function():
+    try:
+        check = validate_ipaddress(ent_ipadd_1.get(), ent_ipadd_2.get(),
+                                   ent_ipadd_3.get(), ent_ipadd_4.get(),
+                                   ent_2_port.get())
+        check2 = validate_checkbox(UDP_checked.get(), TCP_checked.get())
+
+        if check and check2 is True:
+
+            if UDP_checked.get() == 1:
+                messagebox.showinfo("Message", udp_message)
+            elif TCP_checked.get() == 1:
+                man_display.delete('1.0', END)
+                user_ipaddress = ent_ipadd_1.get() + "." + ent_ipadd_2.get() + "." + ent_ipadd_3.get() + "." + ent_ipadd_4.get()
+                port = ent_2_port.get()
+                transport = "TCP"
+                new_socket = create_packet(transport)
+                state = port_scanner(user_ipaddress, port, new_socket)
+                result = port_status(state, user_ipaddress, port)
+                man_display.insert("1.0", result)
+                new_socket.close()
+
+        elif check2 is False:
+            messagebox.showinfo("Message", "Invalid Transport.")
+
+    except Exception as error:
+        messagebox.showinfo("Error", "Message: {}".format(error))
+        clear_function()
+
+
+def ping_function():
+    try:
+        check = validate_ipaddress(ent_ipadd_1.get(), ent_ipadd_2.get(),
+                                   ent_ipadd_3.get(), ent_ipadd_4.get(), "0")
+
+        if check is True:
+            user_ipaddress = ent_ipadd_1.get() + "." + ent_ipadd_2.get() + "." + ent_ipadd_3.get() + "." + ent_ipadd_4.get()
+            man_display.delete('1.0', END)
+            cmd_command = "ping " + user_ipaddress
+            process = subprocess.Popen(cmd_command, stdout=subprocess.PIPE, universal_newlines=True)
+
+        while True:
+            line = process.stdout.readline()
+            man_display.insert(END, line)
+            man_display.see(END)
+            man_display.update_idletasks()
+            if not line:
+                break
+    except Exception as error:
+        messagebox.showinfo("Error", "Message: {}".format(error))
+        clear_function()
+
+
+def tracert_function():
+    check = validate_ipaddress(ent_ipadd_1.get(), ent_ipadd_2.get(),
+                               ent_ipadd_3.get(), ent_ipadd_4.get(), "0")
+    if check is True:
+        user_ipaddress = ent_ipadd_1.get() + "." + ent_ipadd_2.get() + "." + ent_ipadd_3.get() + "." + ent_ipadd_4.get()
+        man_display.delete('1.0', END)
+        cmd_command = "tracert " + user_ipaddress
+        process = subprocess.Popen(cmd_command, stdout=subprocess.PIPE, universal_newlines=True)
+        while True:
+            line = process.stdout.readline()
+            man_display.insert(END, line)
+            man_display.see(END)
+            man_display.update_idletasks()
+            if not line:
+                break
+
+
+def nslookup_function():
+    try:
+        man_display.delete('1.0', END)
+        response = ent_nslookup_4.get()
+        if response == "":
+            messagebox.showinfo("Message", "DNS Test requires either a hostname or IP address")
+        else:
+            cmd_command = "nslookup " + response
+            process = subprocess.Popen(cmd_command, stdout=subprocess.PIPE, universal_newlines=True)
+            while True:
+                line = process.stdout.readline()
+                man_display.insert(END, line)
+                man_display.see(END)
+                man_display.update_idletasks()
+                if not line:
+                    break
+    except Exception as error:
+        messagebox.showinfo("Error", "Message: {}".format(error))
+        clear_function()
+
+
+def ipconfig_function():
+        man_display.delete('1.0', END)
+        cmd_command = "ipconfig /all"
+        process = subprocess.Popen(cmd_command, stdout=subprocess.PIPE, universal_newlines=True)
+        while True:
+            line = process.stdout.readline()
+            man_display.insert(END, line)
+            man_display.see(END)
+            man_display.update_idletasks()
+            if not line:
+                break
+
+
+def validate_ipaddress(a, b, c, d, e):
+    value = int(a + b + c + d + e)
+    if type(value) is not int:
+        return False
+    else:
+        return True
+
+
+def validate_checkbox(a, b):
+    if a == 0 and b == 0:
+        return False
+    elif a == 1 and b == 1:
+        return False
+    else:
+        return True
+
+
+def clear_function():
+    ent_ipadd_1.delete(0, END)
+    ent_ipadd_2.delete(0, END)
+    ent_ipadd_3.delete(0, END)
+    ent_ipadd_4.delete(0, END)
+    ent_2_port.delete(0, END)
+    ent_nslookup_4.delete(0, END)
+    UDP_checked.set(0)
+    TCP_checked.set(0)
+    man_display.delete('1.0', END)
+    auto_ent_ipadd_1.delete(0, END)
+    auto_ent_ipadd_2.delete(0, END)
+    auto_ent_ipadd_3.delete(0, END)
+    auto_ent_ipadd_4.delete(0, END)
+    auto_combobox_Template.current(0)
+    auto_display.delete('1.0', END)
+
+
+def testindividualports():
+    destroytestpiicixports()
+    GUI.geometry("940x735+450+250")
+    fr_main.grid(padx=(20, 20), pady=(20, 20))
+    man_fr_userdata.grid(row=0, column=0, sticky=W)
+    man_fr_userdata.grid_propagate(False)
+    lb_1_dstip.grid(row=2, column=0)
+    ent_ipadd_1.grid(row=2, column=1)
+    ent_ipadd_2.grid(row=2, column=2)
+    ent_ipadd_3.grid(row=2, column=3)
+    ent_ipadd_4.grid(row=2, column=4)
+    lb_2_port.grid(row=4, column=0)
+    ent_2_port.grid(row=4, column=1)
+    UDP_ckb.grid(row=6, column=1)
+    TCP_ckb.grid(row=6, column=2)
+    man_fr_buttons.grid(row=1, column=0, padx=(20, 20), pady=(20, 20), sticky=W)
+    bt_2_clear.grid(row=0, column=0)
+#    separator_v.grid(row=0, column=1, padx=(5, 5), pady=(5, 5))
+    bt_1_port_test.grid(row=0, column=2)
+#    separator_v_1.grid(row=0, column=3, padx=(5, 5), pady=(5, 5))
+    bt_3_ping.grid(row=0, column=4)
+#    separator_v_2.grid(row=0, column=5, padx=(5, 5), pady=(5, 5))
+    bt_4_dns.grid(row=0, column=6)
+#    separator_v_3.grid(row=0, column=7, padx=(5, 5), pady=(5, 5))
+    bt_5_tracert.grid(row=0, column=8)
+    bt_6_ipconfig.grid(row=0, column=9)
+    man_fr_display.grid(row=2, columnspan=4)
+    man_fr_display.grid_propagate(False)
+    man_display.grid(row=0, column=0)
+    man_scrollbar.grid(row=0, column=1, sticky=NS)
+    lb_3_transport.grid(row=6, column=0)
+    man_fr_userdata_2.grid(row=0, column=1, sticky=NE)
+    man_fr_userdata_2.grid_propagate(False)
+    lb_4_nslookup.grid(row=0, column=0)
+    ent_nslookup_4.grid(row=0, column=1)
+
+
+def testpiicixports():
+    destroytestindividualports()
+    GUI.geometry("940x590+450+250")
+    auto_fr_main.grid(padx=(20, 20), pady=(20, 20))
+    auto_fr_userdata.grid(row=0, column=0, sticky=NW)
+    auto_fr_userdata.grid_propagate(False)
+    auto_lb_1_dstip.grid(row=2, column=0)
+    auto_ent_ipadd_1.grid(row=2, column=1)
+    auto_ent_ipadd_2.grid(row=2, column=2)
+    auto_ent_ipadd_3.grid(row=2, column=3)
+    auto_ent_ipadd_4.grid(row=2, column=4)
+    auto_lb_2_template.grid(row=3, column=0)
+    auto_combobox_Template.grid(row=3, column=1, columnspan=4)
+    auto_fr_buttons.grid(row=1, column=0, padx=(20, 20), pady=(20, 20), sticky=NW)
+    auto_bt_1_clear.grid(row=0, column=0)
+    auto_separator_v.grid(row=0, column=1)
+    auto_bt_2_runtemplate.grid(row=0, column=2)
+    auto_fr_display.grid(row=2, columnspan=4)
+    auto_fr_display.grid_propagate(False)
+    auto_display.grid(row=0, column=0)
+    auto_scrollbar.grid(row=0, column=1, sticky=NS)
+
+
+def destroytestindividualports():
+    fr_main.grid_remove()
+    initial_fr.grid_remove()
+    lb_photo.grid_remove()
+
+
+def destroytestpiicixports():
+    auto_fr_main.grid_remove()
+    initial_fr.grid_remove()
+    lb_photo.grid_remove()
+
+
+def close_function():
+    print(GUI.winfo_width())
+    print(GUI.winfo_height())
+    print(GUI.winfo_geometry())
+    GUI.destroy()
+
+
+#                           Create GUI design
+GUI.geometry("337x223+749+293")
+# GUI.configure(background='white')
+GUI.update_idletasks()
+# GUI.resizable(width=FALSE, height=FALSE)
+GUI.title(title)
+
+# Add Initial Frame and Label
+initial_fr = Frame(GUI, borderwidth=0, width=900, height=360)
+logo_image = Image.open(mainlogo)
+logo_photo = ImageTk.PhotoImage(logo_image)
+lb_photo = Label(initial_fr, image=logo_photo, borderwidth=0)
+
+# Add and customize Manual Frames
+fr_main = Frame(GUI)
+man_fr_userdata = Frame(fr_main, width=450, height=100, borderwidth=5, relief=RIDGE)
+man_fr_buttons = Frame(fr_main)
+man_fr_display = Frame(fr_main, width=900, height=500, borderwidth=5, relief=RIDGE)
+man_fr_userdata_2 = Frame(fr_main, width=450, height=100, borderwidth=5, relief=RIDGE)
+
+# Add and customize Auto Frames
+auto_fr_main = Frame(GUI)
+auto_fr_userdata = Frame(auto_fr_main, width=450, height=100, borderwidth=5, relief=RIDGE)
+auto_fr_buttons = Frame(auto_fr_main)
+auto_fr_display = Frame(auto_fr_main, width=900, height=360, borderwidth=5, relief=RIDGE)
+auto_fr_userdata_2 = Frame(auto_fr_main, width=450, height=100, borderwidth=5, relief=RIDGE)
+
+# Main Menu is attached to GUI not Frame due to error
+main_menu = Menu(GUI)
+GUI.config(menu=main_menu)
+
+# Tabs for Main Menu, tearoff=False is required to remove dashed line
+File_tab = Menu(main_menu, tearoff=False)
+main_menu.add_cascade(label="File", menu=File_tab)
+File_tab.add_command(label="Network Tools", command=testindividualports)
+File_tab.add_command(label="Test PIIC iX ports", command=testpiicixports)
+File_tab.add_separator()
+File_tab.add_command(label="Close", command=close_function)
+
+About_tab = Menu(main_menu, tearoff=False)
+main_menu.add_cascade(label="About", menu=About_tab)
+
+# Labels and Entries - Manual Frame
+lb_1_dstip = Label(man_fr_userdata, text="Destination IP address:", font=("Helvetica", 16))
+ent_ipadd_1 = Entry(man_fr_userdata, font=("Helvetica", 16), width=4)
+ent_ipadd_2 = Entry(man_fr_userdata, font=("Helvetica", 16), width=4)
+ent_ipadd_3 = Entry(man_fr_userdata, font=("Helvetica", 16), width=4)
+ent_ipadd_4 = Entry(man_fr_userdata, font=("Helvetica", 16), width=4)
+lb_2_port = Label(man_fr_userdata, text="Port number:", font=("Helvetica", 16))
+ent_2_port = Entry(man_fr_userdata, font=("Helvetica", 16), width=4)
+lb_3_transport = Label(man_fr_userdata, text="Transport:", font=("Helvetica", 16))
+ent_3_transport = Entry(man_fr_userdata, font=("Helvetica", 16))
+lb_udp_notification = Label(man_fr_userdata_2, text=udp_message, font=("Helvetica", 12), justify=LEFT)
+lb_4_nslookup = Label(man_fr_userdata_2, text="nslookup:", font=("Helvetica", 16))
+ent_nslookup_4 = Entry(man_fr_userdata_2, font=("Helvetica", 16), width=27)
+
+# Labels and Entries - Auto Frame
+auto_lb_1_dstip = Label(auto_fr_userdata, text="Destination IP address:", font=("Helvetica", 16), justify=LEFT)
+auto_ent_ipadd_1 = Entry(auto_fr_userdata, font=("Helvetica", 16), width=4)
+auto_ent_ipadd_2 = Entry(auto_fr_userdata, font=("Helvetica", 16), width=4)
+auto_ent_ipadd_3 = Entry(auto_fr_userdata, font=("Helvetica", 16), width=4)
+auto_ent_ipadd_4 = Entry(auto_fr_userdata, font=("Helvetica", 16), width=4)
+auto_lb_udp_notification = Label(auto_fr_userdata_2, text=udp_message, font=("Helvetica", 12), justify=LEFT)
+auto_lb_2_template = Label(auto_fr_userdata, text="Choose a template", font=("Helvetica", 16), justify=LEFT)
+
+# Combobox - Auto Frame
+auto_combobox_Template = ttk.Combobox(auto_fr_userdata, state="readonly", values=("", "Primary Server", "Surveillance"),
+                                      width=27, font=("Helvetica", 10))
+auto_combobox_Template.current(0)
+
+# CheckButton for TCP and UDP
+UDP_ckb = Checkbutton(man_fr_userdata, text="UDP", variable=UDP_checked, onvalue=1, offvalue=0)
+TCP_ckb = Checkbutton(man_fr_userdata, text="TCP", variable=TCP_checked, onvalue=1, offvalue=0)
+
+# Text Window and ScrollBar - Manual Frame
+man_display = Text(man_fr_display, width=79, height=22)
+man_display.configure(state="normal", font=("Helvetica", 14))
+man_scrollbar = Scrollbar(man_fr_display, command=man_display.yview)
+man_display['yscrollcommand'] = man_scrollbar.set
+
+# Text Window and ScrollBar - Auto Frame
+auto_display = Text(auto_fr_display, width=72)
+auto_display.configure(state="normal", font=("Helvetica", 14))
+auto_scrollbar = Scrollbar(auto_fr_display, command=auto_display.yview)
+auto_display['yscrollcommand'] = auto_scrollbar.set
+
+# Main Button - Manual Frame
+bt_1_port_test = Button(man_fr_buttons, text="Port", font=("Helvetica", 16), command=port_test_function)
+bt_2_clear = Button(man_fr_buttons, text="Clear", font=("Helvetica", 16), command=clear_function)
+bt_3_ping = Button(man_fr_buttons, text="Ping", font=("Helvetica", 16), command=ping_function)
+bt_4_dns = Button(man_fr_buttons, text="DNS", font=("Helvetica", 16), command=nslookup_function)
+bt_5_tracert = Button(man_fr_buttons, text="Tracert", font=("Helvetica", 16), command=tracert_function)
+bt_6_ipconfig = Button(man_fr_buttons, text="ipconfig", font=("Helvetica", 16), command=ipconfig_function)
+
+# Separators - Manual Frame
+separator_v = ttk.Separator(man_fr_buttons, orient=VERTICAL)
+separator_v_1 = ttk.Separator(man_fr_buttons, orient=VERTICAL)
+separator_v_2 = ttk.Separator(man_fr_buttons, orient=VERTICAL)
+separator_v_3 = ttk.Separator(man_fr_buttons, orient=VERTICAL)
+
+# Main Button - Auto Frame
+auto_bt_1_clear = Button(auto_fr_buttons, text="Clear", font=("Helvetica", 16), command=clear_function)
+auto_bt_2_runtemplate = Button(auto_fr_buttons, text="Run Template", font=("Helvetica", 16), command=ping_function)
+
+# Separators - Auto Frame
+auto_separator_v = ttk.Separator(auto_fr_buttons, orient=VERTICAL)
+
+# Start GUI
+if __name__ == '__main__':
+    initial_fr.grid(padx=(20, 20), pady=(20, 20), sticky=NW)
+    lb_photo.grid(row=0, column=0)
+    GUI.mainloop()
